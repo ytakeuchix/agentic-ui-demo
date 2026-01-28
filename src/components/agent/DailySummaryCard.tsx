@@ -128,7 +128,6 @@ export function DailySummaryCard() {
                                 onFix={() => {
                                     // Case D (Overseas Group) -> Direct to Canvas
                                     if (expense.groupId || expense.merchant.includes('Uber *Trip')) {
-                                        console.log('MYLOG: DailySummaryCard Click:', expense.id, expense.groupId, expense.merchant);
                                         setFocusedExpenseId(expense.id);
                                         setScenario('canvas');
                                     } else {

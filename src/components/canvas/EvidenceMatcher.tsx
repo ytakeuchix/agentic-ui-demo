@@ -9,10 +9,7 @@ import {
     CreditCard,
     MapPin,
     Maximize2,
-    Plane,
-    Hotel,
     Utensils,
-    Car,
     AlertTriangle,
     ChevronDown,
     ChevronUp,
@@ -451,30 +448,4 @@ function TimelineItem({ icon, iconBg = "bg-white border-2 border-gray-300", time
     )
 }
 
-function EvidenceCard({ icon, title, source, time, status, children }: any) {
-    const isMatched = status === 'matched';
-    return (
-        <div className="bg-white p-4 rounded-lg border shadow-sm flex items-start group">
-            <div className={cn("p-2 rounded-full mr-4 shrink-0", isMatched ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500")}>
-                {icon}
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-1">
-                    <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-                    <span className="text-xs text-gray-400">{time}</span>
-                </div>
-                <div className="text-xs text-gray-500 mb-2">{source}</div>
-                <div className="text-sm text-gray-700">
-                    {children}
-                </div>
-            </div>
-            <div className="ml-4 flex items-center self-center">
-                {isMatched ? (
-                    <Check className="w-5 h-5 text-green-500" />
-                ) : (
-                    <div className="text-xs text-red-400 font-medium px-2 py-1 bg-red-50 rounded">不一致</div>
-                )}
-            </div>
-        </div>
-    );
-}
+
