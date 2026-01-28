@@ -7,6 +7,8 @@ import { DailySummaryCard } from '@/components/agent/DailySummaryCard';
 import { CorrectionForm } from '@/components/agent/CorrectionForm';
 import { EvidenceMatcher } from '@/components/canvas/EvidenceMatcher';
 
+import { SubmissionSuccessMessage } from '@/components/agent/SubmissionSuccessMessage';
+
 // Inner component to access context
 function DemoApp() {
   const { currentScenario } = useDemo();
@@ -27,7 +29,7 @@ function DemoApp() {
         )}
 
         {/* ZeroUI Notification Phase */}
-        {(currentScenario === 'notification' || currentScenario === 'gen-ui' || currentScenario === 'canvas') && (
+        {(currentScenario === 'notification' || currentScenario === 'gen-ui' || currentScenario === 'canvas' || currentScenario === 'done' || currentScenario === 'submitted') && (
           <DailySummaryCard />
         )}
 
@@ -39,6 +41,11 @@ function DemoApp() {
         {/* Canvas Phase (Overlay) */}
         {currentScenario === 'canvas' && (
           <EvidenceMatcher />
+        )}
+
+        {/* Success Message */}
+        {currentScenario === 'submitted' && (
+          <SubmissionSuccessMessage />
         )}
 
         {/* Canvas Phase - Logic handled by Shell or Overlay? 

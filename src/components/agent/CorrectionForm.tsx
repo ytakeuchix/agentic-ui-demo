@@ -47,14 +47,52 @@ export function CorrectionForm() {
             // Simple delay to let user see "Saved" before closing
             const timer = setTimeout(() => setScenario('notification'), 500);
             return () => clearTimeout(timer);
-        } else if (targetExpense.merchant === 'Uber *Trip' || targetExpense.id === 'exp_004') {
-            // Auto-advance to Canvas for Overseas Trip (too complex for GenUI)
-            setFocusedExpenseId(targetExpense.id);
-            setScenario('canvas');
         }
-    }, [targetExpense, setScenario, setFocusedExpenseId]);
+    }, [targetExpense, setScenario]);
 
     if (!targetExpense) return null;
+
+    // Canvas Redirect for complex items (Uber *Trip)
+    if (targetExpense.merchant === 'Uber *Trip' || targetExpense.groupId) {
+        return (
+            <div className="max-w-xl ml-12 my-4">
+                <GenUIContainer>
+                    <div className="p-6 text-center">
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Sparkles className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <h3 className="font-bold text-gray-900 mb-2">詳細な照合が必要です</h3>
+                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                            「ANA (All Nippon Airways) など4件」の明細は、海外出張の経路情報との複雑な照合が必要です。<br />
+                            専用の検証画面でルートを確認してください。
+                        </p>
+
+                        <div className="flex flex-col space-y-3">
+                            <button
+                                onClick={() => {
+                                    setFocusedExpenseId(targetExpense.id);
+                                    setScenario('canvas');
+                                }}
+                                className="w-full flex items-center justify-center px-4 py-3 bg-purple-600 text-white rounded-md shadow-sm hover:bg-purple-700 font-bold transition-colors"
+                            >
+                                検証画面を開く
+                                <ArrowRight className="w-4 h-4 ml-2" />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setFocusedExpenseId(null);
+                                    setScenario('notification');
+                                }}
+                                className="text-sm text-gray-500 hover:text-gray-700"
+                            >
+                                後で確認する
+                            </button>
+                        </div>
+                    </div>
+                </GenUIContainer>
+            </div>
+        );
+    }
 
     if (isGenerating) {
         return (

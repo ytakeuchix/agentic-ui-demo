@@ -20,9 +20,56 @@ import { cn } from '@/lib/utils';
 export function DailySummaryCard() {
     const { expenses, setScenario, setFocusedExpenseId } = useDemo();
 
-    // Calculate totals
-    const totalAmount = expenses.reduce((sum, item) => sum + item.amount, 0);
-    // Include manual_required in the count
+    // Grouping Logic
+    const displayItems: ExpenseItem[] = [];
+    const processedGroups = new Set<string>();
+
+    expenses.forEach(exp => {
+        if (exp.groupId) {
+            if (processedGroups.has(exp.groupId)) return;
+
+            // Create Group Summary
+            const groupItems = expenses.filter(e => e.groupId === exp.groupId);
+            processedGroups.add(exp.groupId);
+
+            // Find representative item (Prioritize ANA or similar, otherwise first)
+            const anchor = groupItems.find(e => e.merchant.includes('ANA')) || groupItems[0];
+            const totalJpy = groupItems.reduce((sum, e) => {
+                const rate = e.currency_rate || 151.2; // fallback rate
+                const amountJpy = e.currency === 'JPY' ? e.amount : e.amount * rate;
+                return sum + amountJpy;
+            }, 0);
+
+            // Determine Group Status (Worst case wins)
+            const hasViolation = groupItems.some(e => e.is_violation || e.match_status === 'mismatch' || e.match_status === 'manual_required');
+
+            const groupItem: ExpenseItem = {
+                ...anchor,
+                merchant: `${anchor.merchant} など${groupItems.length}件`,
+                description: 'サンフランシスコ出張',
+                amount: Math.floor(totalJpy),
+                currency: 'JPY',
+                is_violation: hasViolation,
+                // If any item has warning, show warning
+                match_status: hasViolation ? 'mismatch' : 'matched',
+                id: anchor.id // Use anchor ID to trigger correct focus
+            };
+            displayItems.push(groupItem);
+        } else {
+            displayItems.push(exp);
+        }
+    });
+
+    // Calculate totals for valid display (using the grouped list might be misleading for total count, 
+    // but the spec says "expenses.length" which is raw count. Let's keep raw count for header but use grouped for list)
+
+    // Recalculate Total Amount correctly (handling currencies)
+    const grandTotalJpy = expenses.reduce((sum, item) => {
+        const rate = item.currency_rate || 151.2;
+        const val = item.currency === 'JPY' ? item.amount : item.amount * rate;
+        return sum + val;
+    }, 0);
+
     const violationCount = expenses.filter(e => e.is_violation || e.match_status === 'mismatch' || e.match_status === 'manual_required').length;
     const isAllClear = violationCount === 0;
 
@@ -39,7 +86,13 @@ export function DailySummaryCard() {
                     <span className="text-xs text-gray-500">APP 18:00</span>
                 </div>
 
-                {/* Message Bubble content */}
+                {/* Text Message */}
+                <div className="text-sm text-gray-800 leading-relaxed max-w-fit bg-white/50 px-2 py-1 rounded mb-1">
+                    お疲れ様です 🍵<br />
+                    本日確認していただきたい経費精算です。
+                </div>
+
+                {/* ZeroUI Card */}
                 <div className="bg-white border text-sm rounded-lg shadow-sm overflow-hidden">
                     <div className="px-4 py-3 bg-gray-50 border-b flex justify-between items-center">
                         <div>
@@ -56,26 +109,26 @@ export function DailySummaryCard() {
                                 ) : (
                                     <span className="text-xs text-green-600 font-medium flex items-center">
                                         <CheckCircle className="w-3 h-3 mr-1" />
-                                        すべて承認可能です
+                                        すべて取引の確認が完了しました。
                                     </span>
                                 )}
                             </div>
                         </div>
                         <div className="text-right">
                             <span className="text-xs text-gray-500 block">合計</span>
-                            <span className="font-bold text-lg">¥{totalAmount.toLocaleString()}</span>
+                            <span className="font-bold text-lg">¥{Math.floor(grandTotalJpy).toLocaleString()}</span>
                         </div>
                     </div>
 
                     <div className="divide-y">
-                        {expenses.map((expense) => (
+                        {displayItems.map((expense) => (
                             <ExpenseRow
                                 key={expense.id}
                                 expense={expense}
                                 onFix={() => {
-                                    // Case D (Overseas) -> Direct to Canvas (Too complex for GenUI)
-                                    // Case D (Overseas) -> Direct to Canvas (Too complex for GenUI)
-                                    if (expense.merchant === 'Uber *Trip' || expense.id === 'exp_004') {
+                                    // Case D (Overseas Group) -> Direct to Canvas
+                                    if (expense.groupId || expense.merchant.includes('Uber *Trip')) {
+                                        console.log('MYLOG: DailySummaryCard Click:', expense.id, expense.groupId, expense.merchant);
                                         setFocusedExpenseId(expense.id);
                                         setScenario('canvas');
                                     } else {
@@ -100,8 +153,9 @@ export function DailySummaryCard() {
                                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             )}
                             disabled={!isAllClear}
+                            onClick={() => setScenario('submitted')}
                         >
-                            {isAllClear ? 'すべての経費を一括申請' : `${violationCount}件の不備を修正`}
+                            {isAllClear ? '経費申請を確定する' : `経費申請を確定する`}
                         </button>
                     </div>
                 </div>

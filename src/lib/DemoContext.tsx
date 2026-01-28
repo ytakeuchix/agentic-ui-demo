@@ -73,27 +73,101 @@ const INITIAL_EXPENSES: ExpenseItem[] = [
         match_status: 'mismatch',
         ai_reasoning: 'カレンダーに予定はありませんが、Slackでの緊急対応連絡と休日出勤申請が確認されました。'
     },
-    // Case D: Overseas Trip (Canvas Verification)
+    // Case D: Overseas Trip Cluster (SFO Trip 2026-01)
+    // D-1: Flight (Anchor of the trip)
     {
-        id: 'exp_004',
-        date: '2026-01-15',
-        merchant: 'Uber *Trip',
-        amount: 350000,
+        id: 'exp_005',
+        groupId: 'trip_sfo_001',
+        date: '2026-01-20',
+        merchant: 'ANA (All Nippon Airways)',
+        amount: 250000,
         currency: 'JPY',
         tax: 0,
         category: 'Travel',
         cost_center: '開発部',
         project_code: 'PRJ-GLOBAL',
-        description: 'サンフランシスコ出張: 航空券・宿泊費他',
-        invoice_num: 'INV-US-001',
-        // AI Analysis
+        description: 'Flight ticket NRT-SFO',
         is_violation: false,
-        warning_message: '出張計画ルートとの照合推奨',
+        status: 'approved',
+        evidence_sources: ['Receipt', 'Itinerary'],
+        confidence_score: 0.99,
+        match_status: 'matched',
+        timestamp: '2026-01-20T10:00:00', // Depart NRT
+        location: { name: 'Narita Airport', lat: 35.771987, lng: 140.392857 },
+        itinerary_match: 'matched'
+    },
+    // D-2: Uber Trip (The trigger item - originally mismatched)
+    {
+        id: 'exp_004',
+        groupId: 'trip_sfo_001',
+        date: '2026-01-21',
+        merchant: 'Uber *Trip',
+        amount: 45.50,
+        currency: 'USD',
+        currency_rate: 151.20, // Example rate
+        tax: 0,
+        category: 'Travel',
+        cost_center: '開発部',
+        project_code: 'PRJ-GLOBAL',
+        description: 'SFO Airport to Hotel',
+        invoice_num: 'INV-US-001',
+        is_violation: false,
         status: 'pending_fix',
-        evidence_sources: ['Receipt', 'CreditCard', 'TravelItinerary', 'Maps'],
+        evidence_sources: ['Receipt', 'CreditCard'],
         confidence_score: 0.82,
-        match_status: 'mismatch', // Trigger Canvas
-        ai_reasoning: '出張旅程に含まれる日時ですが、決済場所の確認を推奨します。'
+        match_status: 'mismatch', // Triggers Canvas
+        ai_reasoning: '出張旅程に含まれる日時ですが、決済場所の確認を推奨します。',
+        timestamp: '2026-01-21T18:30:00', // Arrival SFO time approx
+        location: { name: 'SFO / US-101', lat: 37.6213, lng: -122.3790 },
+        itinerary_match: 'matched'
+    },
+    // D-3: Hotel (Stay duration)
+    {
+        id: 'exp_006',
+        groupId: 'trip_sfo_001',
+        date: '2026-01-25',
+        merchant: 'Grand Hyatt SFO',
+        amount: 1200.00,
+        currency: 'USD',
+        currency_rate: 151.20,
+        tax: 150.00,
+        category: 'Accommodation',
+        cost_center: '開発部',
+        project_code: 'PRJ-GLOBAL',
+        description: 'Hotel Stay (5 nights)',
+        is_violation: false,
+        status: 'approved',
+        evidence_sources: ['Receipt', 'Itinerary'],
+        confidence_score: 0.99,
+        match_status: 'matched',
+        timestamp: '2026-01-25T09:00:00', // Checkout
+        location: { name: 'Grand Hyatt SFO', lat: 37.794, lng: -122.395 }, // Zone Center
+        itinerary_match: 'matched'
+    },
+    // D-4: Suspicious Meal (Holiday & Out of Zone)
+    {
+        id: 'exp_007',
+        groupId: 'trip_sfo_001',
+        date: '2026-01-24', // Saturday
+        merchant: 'Fisherman\'s Wharf Seafood',
+        amount: 120.00,
+        currency: 'USD',
+        currency_rate: 151.20,
+        tax: 10.00,
+        category: 'Meals',
+        cost_center: '開発部',
+        project_code: 'PRJ-GLOBAL',
+        description: 'Dinner with client?',
+        is_violation: true,
+        status: 'pending_fix',
+        evidence_sources: ['Receipt'],
+        confidence_score: 0.60,
+        match_status: 'manual_required',
+        warning_message: '休日かつ業務エリア外での決済です',
+        ai_reasoning: '休日利用 かつ 業務エリア外（観光地エリア） での決済です。業務関連性を示すエビデンス（休日出勤申請や顧客訪問記録）が不足しています。',
+        timestamp: '2026-01-24T19:30:00',
+        location: { name: 'Fisherman\'s Wharf', lat: 37.808, lng: -122.417 }, // 5km+ away from Hyatt
+        itinerary_match: 'warning'
     }
 ];
 
