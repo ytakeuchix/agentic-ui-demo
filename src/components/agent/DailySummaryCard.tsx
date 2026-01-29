@@ -13,12 +13,19 @@ import {
     FileText,    // Receipt
     Calendar,    // Calendar
     CreditCard,  // CC
-    Mail         // Email
+    Mail,        // Email
+    Loader2      // Loading Spinner
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function DailySummaryCard() {
     const { expenses, setScenario, setFocusedExpenseId } = useDemo();
+    const [showCard, setShowCard] = React.useState(false);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => setShowCard(true), 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Grouping Logic
     const displayItems: ExpenseItem[] = [];
@@ -86,78 +93,88 @@ export function DailySummaryCard() {
                     <span className="text-xs text-gray-500">APP 18:00</span>
                 </div>
 
-                {/* Text Message */}
-                <div className="text-sm text-gray-800 leading-relaxed max-w-fit bg-white/50 px-2 py-1 rounded mb-1">
+                {/* Text Message - Always visible immediately */}
+                <div className="text-sm text-gray-800 leading-relaxed max-w-fit bg-white/50 px-2 py-1 rounded mb-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
                     お疲れ様です 🍵<br />
                     本日確認していただきたい経費精算です。
                 </div>
 
-                {/* ZeroUI Card */}
-                <div className="bg-white border text-sm rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-4 py-3 bg-gray-50 border-b flex justify-between items-center">
-                        <div>
-                            <h3 className="font-semibold text-gray-800">日次経費サマリー (1月24日)</h3>
-                            <div className="flex flex-col mt-1 space-y-1">
-                                <div className="text-xs text-gray-500 flex items-center">
-                                    <span>{expenses.length}件の取引を処理しました</span>
+                {/* AI Loading State */}
+                {!showCard && (
+                    <div className="flex items-center space-x-2 text-purple-600 bg-purple-50 p-3 rounded-md text-sm border border-purple-100 animate-in fade-in zoom-in-95 duration-300">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="font-medium">AI is generating daily summary...</span>
+                    </div>
+                )}
+
+                {/* ZeroUI Card - Delayed appearance */}
+                {showCard && (
+                    <div className="bg-white border text-sm rounded-lg shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-forwards">
+                        <div className="px-4 py-3 bg-gray-50 border-b flex justify-between items-center">
+                            <div>
+                                <h3 className="font-semibold text-gray-800">日次経費サマリー (1月24日)</h3>
+                                <div className="flex flex-col mt-1 space-y-1">
+                                    <div className="text-xs text-gray-500 flex items-center">
+                                        <span>{expenses.length}件の取引を処理しました</span>
+                                    </div>
+                                    {violationCount > 0 ? (
+                                        <span className="text-xs text-amber-600 font-medium flex items-center">
+                                            <AlertTriangle className="w-3 h-3 mr-1" />
+                                            {violationCount}件の要確認項目があります
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-green-600 font-medium flex items-center">
+                                            <CheckCircle className="w-3 h-3 mr-1" />
+                                            すべて取引の確認が完了しました。
+                                        </span>
+                                    )}
                                 </div>
-                                {violationCount > 0 ? (
-                                    <span className="text-xs text-amber-600 font-medium flex items-center">
-                                        <AlertTriangle className="w-3 h-3 mr-1" />
-                                        {violationCount}件の要確認項目があります
-                                    </span>
-                                ) : (
-                                    <span className="text-xs text-green-600 font-medium flex items-center">
-                                        <CheckCircle className="w-3 h-3 mr-1" />
-                                        すべて取引の確認が完了しました。
-                                    </span>
-                                )}
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xs text-gray-500 block">合計</span>
+                                <span className="font-bold text-lg">¥{Math.floor(grandTotalJpy).toLocaleString()}</span>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <span className="text-xs text-gray-500 block">合計</span>
-                            <span className="font-bold text-lg">¥{Math.floor(grandTotalJpy).toLocaleString()}</span>
-                        </div>
-                    </div>
 
-                    <div className="divide-y">
-                        {displayItems.map((expense) => (
-                            <ExpenseRow
-                                key={expense.id}
-                                expense={expense}
-                                onFix={() => {
-                                    // Case D (Overseas Group) -> Direct to Canvas
-                                    if (expense.groupId || expense.merchant.includes('Uber *Trip')) {
+                        <div className="divide-y">
+                            {displayItems.map((expense) => (
+                                <ExpenseRow
+                                    key={expense.id}
+                                    expense={expense}
+                                    onFix={() => {
+                                        // Case D (Overseas Group) -> Direct to Canvas
+                                        if (expense.groupId || expense.merchant.includes('Uber *Trip')) {
+                                            setFocusedExpenseId(expense.id);
+                                            setScenario('canvas');
+                                        } else {
+                                            setFocusedExpenseId(expense.id);
+                                            setScenario('gen-ui');
+                                        }
+                                    }}
+                                    onShowDetails={() => {
                                         setFocusedExpenseId(expense.id);
                                         setScenario('canvas');
-                                    } else {
-                                        setFocusedExpenseId(expense.id);
-                                        setScenario('gen-ui');
-                                    }
-                                }}
-                                onShowDetails={() => {
-                                    setFocusedExpenseId(expense.id);
-                                    setScenario('canvas');
-                                }}
-                            />
-                        ))}
-                    </div>
+                                    }}
+                                />
+                            ))}
+                        </div>
 
-                    <div className="p-3 bg-gray-50 border-t flex justify-end">
-                        <button
-                            className={cn(
-                                "px-4 py-2 rounded text-sm font-medium transition-colors",
-                                isAllClear
-                                    ? "bg-green-600 text-white hover:bg-green-700 shadow-sm"
-                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            )}
-                            disabled={!isAllClear}
-                            onClick={() => setScenario('submitted')}
-                        >
-                            {isAllClear ? '経費申請を確定する' : `経費申請を確定する`}
-                        </button>
+                        <div className="p-3 bg-gray-50 border-t flex justify-end">
+                            <button
+                                className={cn(
+                                    "px-4 py-2 rounded text-sm font-medium transition-colors",
+                                    isAllClear
+                                        ? "bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                )}
+                                disabled={!isAllClear}
+                                onClick={() => setScenario('submitted')}
+                            >
+                                {isAllClear ? '経費申請を確定する' : `経費申請を確定する`}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
